@@ -21,8 +21,9 @@ The goal of this project is to offer a solid, extensible foundation that can be 
 - [x] Azure Key Vault
 
 ### Databases
-- [ ] MySQL
-- [ ] PostgreSQL
+- [x] MySQL
+- [x] PostgreSQL
+- [x] SqlServer
 
 ### Message Brokers
 - [ ] GCP Pub/Sub
