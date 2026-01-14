@@ -15,6 +15,31 @@ export function secretManagerTestFactory(client: ISM) {
     listSecrets: async () => {
       assert.strictEqual(secrets.length >= 1, true)
     },
+    listFromASpecificCursor: async () => {
+      const allSecrets: ISecret[] = []
+      let cursor: string | undefined = undefined
+
+      // First page
+      for await (const list of client.list({ perPage: 2 })) {
+        allSecrets.push(...list)
+        if (list.length === 2) {
+          cursor = list[1].name
+        }
+        break
+      }
+
+      assert.strictEqual(allSecrets.length, 2)
+      assert.ok(cursor)
+
+      // Second page
+      const secondPageSecrets: ISecret[] = []
+      for await (const list of client.list({ cursor, perPage: 2 })) {
+        secondPageSecrets.push(...list)
+        break
+      }
+
+      assert.ok(secondPageSecrets.length > 0)
+    },
     getByName: async () => {
       const secret = await client.get(secrets[0].name)
       assert.deepStrictEqual(secrets[0], secret)

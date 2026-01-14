@@ -1,14 +1,8 @@
+import type { CursorPagination } from './IPagination.ts';
+
 export interface ISM {
   list(pagination?: CursorPagination): AsyncIterable<ISecret[]>
   get(name: string): Promise<ISecret | undefined>
-}
-
-export type Version = {
-  readonly id: string,
-  readonly value: string,
-  readonly enabled: boolean,
-  readonly createdAt: Date,
-  readonly expiresAt?: Date
 }
 
 export interface ISecret {
@@ -27,10 +21,10 @@ export interface ISecret {
   getLatestActiveVersion(): Version | undefined
 }
 
-type Pagination = {
-  take?: number
-}
-
-export type CursorPagination = Pagination & {
-  cursor?: string
+export type Version = {
+  readonly id: string,
+  readonly value: string,
+  readonly enabled: boolean,
+  readonly createdAt: Date,
+  readonly expiresAt?: Date
 }
