@@ -4,7 +4,8 @@ import {
 	GetSecretValueCommand,
 	DescribeSecretCommand,
   type SecretListEntry,
-  type DescribeSecretCommandOutput
+  type DescribeSecretCommandOutput,
+  type ListSecretsCommandOutput
 } from '@aws-sdk/client-secrets-manager'
 import { fromTokenFile } from '@aws-sdk/credential-providers'
 
@@ -17,36 +18,36 @@ export default class AwsSM implements ISM {
   private client: SecretsManagerClient
 
   constructor(props: AwsSmProps) {
-    if ('federatedTokenFile' in props && props.federatedTokenFile?.trim()) {
-      this.client = new SecretsManagerClient({
-        apiVersion: props.apiVersion,
-        region: props.region,
-        credentials: fromTokenFile({
-          webIdentityTokenFile: props.federatedTokenFile,
-          roleArn: props.roleArn,
-          roleSessionName: props.appName
-        })
+    this.client = new SecretsManagerClient({
+      apiVersion: props.apiVersion,
+      region: props.region,
+      credentials: this.getCredentials(props)
+    })
+  }
+
+  private getCredentials(props: AwsSmProps) {
+    if ('federatedTokenFile' in props) {
+      return fromTokenFile({
+        webIdentityTokenFile: props.federatedTokenFile,
+        roleArn: props.roleArn,
+        roleSessionName: props.appName
       })
-    } else if ('accessKeyId' in props && props.accessKeyId?.trim()) {
-      this.client = new SecretsManagerClient({
-        apiVersion: props.apiVersion,
-        region: props.region,
-        credentials: {
-          accessKeyId: props.accessKeyId,
-          secretAccessKey: props.secretAccessKey
-        }
-      })
+    }
+
+    return {
+      accessKeyId: props.accessKeyId,
+      secretAccessKey: props.secretAccessKey
     }
   }
 
   async *list({
-    take = PAGINATION.MAX_PER_PAGE,
+    perPage = PAGINATION.MAX_PER_PAGE,
     cursor,
   }: CursorPagination = {}) {
     let nextPageToken: string | undefined | null = cursor
     while (true) {
-      const { SecretList, NextToken } = await this.client.send(new ListSecretsCommand({
-        MaxResults: take,
+      const { SecretList, NextToken }: ListSecretsCommandOutput = await this.client.send(new ListSecretsCommand({
+        MaxResults: perPage,
         NextToken: nextPageToken
       }))
 

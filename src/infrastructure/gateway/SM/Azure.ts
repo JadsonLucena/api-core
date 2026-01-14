@@ -10,29 +10,30 @@ export default class AzureSM implements ISM {
 	private client: SecretClient
 
 	constructor(props: AzureSmProps) {
-		if ('federatedTokenFile' in props && props.federatedTokenFile?.trim()) {
-			this.client = new SecretClient(
-				props.uri.toString(),
-				new WorkloadIdentityCredential({
-					tenantId: props.tenantId,
-					clientId: props.clientId,
-					tokenFilePath: props.federatedTokenFile
-				})
-			)
-		} else if ('clientSecret' in props && props.clientSecret?.trim()) {
-			this.client = new SecretClient(
+		this.client = new SecretClient(
 			props.uri.toString(),
-			new ClientSecretCredential(
-					props.tenantId,
-					props.clientId,
-					props.clientSecret
-				)
-			)
+			this.getCredentials(props)
+		)
+	}
+
+	private getCredentials(props: AzureSmProps) {
+		if ('federatedTokenFile' in props) {
+			return new WorkloadIdentityCredential({
+				tenantId: props.tenantId,
+				clientId: props.clientId,
+				tokenFilePath: props.federatedTokenFile
+			})
 		}
+
+		return new ClientSecretCredential(
+			props.tenantId,
+			props.clientId,
+			props.clientSecret
+		)
 	}
 
 	async *list({
-		take = PAGINATION.MAX_PER_PAGE,
+		perPage = PAGINATION.MAX_PER_PAGE,
 		cursor
 	}: CursorPagination = {}) {
     let page: Promise<Secret>[] = []
@@ -51,7 +52,7 @@ export default class AzureSM implements ISM {
       page.push(this.mountResponse(properties))
       count++
 
-      if (count >= take) {
+      if (count >= perPage) {
         yield await Promise.all(page)
         page = []
         count = 0

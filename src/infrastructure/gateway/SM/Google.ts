@@ -13,34 +13,37 @@ export default class GoogleSM implements ISM {
 
   constructor(props: GoogleSmProps) {
     // Require the role `roles/secretmanager.secretAccessor` on the service account
-    if ('federatedTokenFile' in props && props.federatedTokenFile?.trim()) {
-      const credentials: JWTInput = JSON.parse(readFileSync(props.federatedTokenFile).toString())
+    const credentials = this.getCredentials(props)
 
-      this.client = new SecretManagerServiceClient({
-        credentials,
-        projectId: props.projectId ?? credentials.project_id
-      })
-    } else if ('credential' in props && props.credential?.trim()) {
-      const credentials: JWTInput = JSON.parse(readFileSync(props.credential).toString())
+    this.client = new SecretManagerServiceClient({
+      credentials,
+      projectId: props.projectId ?? credentials.project_id
+    })
+  }
 
-      this.client = new SecretManagerServiceClient({
-        credentials,
-        projectId: props.projectId ?? credentials.project_id
-      })
-    }
+  private getCredentials(props: GoogleSmProps): JWTInput {
+    const credentialPath = 'federatedTokenFile' in props
+      ? props.federatedTokenFile
+      : props.credential
+
+    return JSON.parse(readFileSync(credentialPath).toString())
   }
 
   async *list({
-    take = PAGINATION.MAX_PER_PAGE,
+    perPage = PAGINATION.MAX_PER_PAGE,
     cursor,
   }: CursorPagination = {}) {
     const projectId = await this.client.getProjectId()
 
     let nextPageToken: string | undefined | null = cursor
     while (true) {
-      const [ secrets, , res ] = await this.client.listSecrets({
+      const [ secrets, , res ]: [
+        protos.google.cloud.secretmanager.v1.ISecret[],
+        protos.google.cloud.secretmanager.v1.IListSecretsRequest | null,
+        protos.google.cloud.secretmanager.v1.IListSecretsResponse
+    ] = await this.client.listSecrets({
         parent: `projects/${projectId}`,
-        pageSize: take,
+        pageSize: perPage,
         pageToken: nextPageToken
       }, {
         autoPaginate: false
