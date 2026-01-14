@@ -1,21 +1,16 @@
 import test, { before, describe } from 'node:test'
 
-import { SM, APP_NAME } from '../../../src/config.ts'
+import { SM, APP_NAME, PROVIDERS } from '../../../src/config.ts'
 
-import AwsSM from '../../../src/infrastructure/gateway/SM/AWS.ts'
+import type { ISM } from '../../../src/application/ports/ISM.ts'
+import GatewayFactory from '../../../src/infrastructure/services/GatewayFactory.ts'
 import { secretManagerTestFactory } from './secretManagerTestFactory.ts'
 
-const client = new AwsSM({
-	apiVersion: SM.AWS.API_VERSION!,
-	region: SM.AWS.REGION!,
-	accessKeyId: SM.AWS.CLIENT_ID!,
-	secretAccessKey: SM.AWS.CLIENT_SECRET!,
-	federatedTokenFile: SM.AWS.FEDERATED_TOKEN_FILE,
-	roleArn: SM.AWS.ROLE_ARN,
-	appName: APP_NAME
-})
-
-const tests = secretManagerTestFactory(client)
+const client = await GatewayFactory.SM({
+	...SM,
+	PROVIDER: PROVIDERS.AWS
+}, APP_NAME)
+const tests = secretManagerTestFactory(client as ISM)
 
 describe('AWS SM', () => {
 	before(tests.setup)

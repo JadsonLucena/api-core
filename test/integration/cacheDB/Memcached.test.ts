@@ -1,9 +1,11 @@
 import test, { before, after, describe } from 'node:test'
 
-import Memcached from '../../../src/infrastructure/gateway/cacheDB/Memcached.ts'
+import GatewayFactory from '../../../src/infrastructure/services/GatewayFactory.ts'
 import { cacheDBTestFactory } from './cacheDBTestFactory.ts'
 
-const client = new Memcached('localhost:11211')
+const client = await GatewayFactory.cacheDB({
+	connectionString: 'memcached://localhost:11211'
+})
 const tests = cacheDBTestFactory(client)
 
 describe('Memcached CacheDB', () => {

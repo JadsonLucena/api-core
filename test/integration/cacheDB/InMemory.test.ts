@@ -1,9 +1,9 @@
 import test, { before, after, describe } from 'node:test'
 
-import InMemory from '../../../src/infrastructure/gateway/cacheDB/InMemory.ts'
+import GatewayFactory from '../../../src/infrastructure/services/GatewayFactory.ts'
 import { cacheDBTestFactory } from './cacheDBTestFactory.ts'
 
-const client = new InMemory()
+const client = await GatewayFactory.cacheDB()
 const tests = cacheDBTestFactory(client)
 
 describe('InMemory CacheDB', () => {

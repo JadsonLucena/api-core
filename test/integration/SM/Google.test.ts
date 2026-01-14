@@ -1,17 +1,16 @@
 import test, { before, describe } from 'node:test'
 
-import { SM } from '../../../src/config.ts'
+import { SM, APP_NAME, PROVIDERS } from '../../../src/config.ts'
 
-import GoogleSM from '../../../src/infrastructure/gateway/SM/Google.ts'
+import type { ISM } from '../../../src/application/ports/ISM.ts'
+import GatewayFactory from '../../../src/infrastructure/services/GatewayFactory.ts'
 import { secretManagerTestFactory } from './secretManagerTestFactory.ts'
 
-const client = new GoogleSM({
-	projectId: SM.GOOGLE.PROJECT_ID,
-	credential: SM.GOOGLE.CREDENTIAL!,
-	federatedTokenFile: SM.GOOGLE.FEDERATED_TOKEN_FILE
-})
-
-const tests = secretManagerTestFactory(client)
+const client = await GatewayFactory.SM({
+	...SM,
+	PROVIDER: PROVIDERS.GOOGLE
+}, APP_NAME)
+const tests = secretManagerTestFactory(client as ISM)
 
 describe('Google SM', () => {
 	before(tests.setup)

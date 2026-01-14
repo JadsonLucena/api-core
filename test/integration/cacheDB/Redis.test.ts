@@ -1,9 +1,11 @@
 import test, { before, after, describe } from 'node:test'
 
-import Redis from '../../../src/infrastructure/gateway/cacheDB/Redis.ts'
+import GatewayFactory from '../../../src/infrastructure/services/GatewayFactory.ts'
 import { cacheDBTestFactory } from './cacheDBTestFactory.ts'
 
-const client = new Redis('redis://localhost:6379')
+const client = await GatewayFactory.cacheDB({
+	connectionString: 'redis://localhost:6379'
+})
 const tests = cacheDBTestFactory(client)
 
 describe('Redis CacheDB', () => {
