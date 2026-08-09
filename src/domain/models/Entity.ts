@@ -204,11 +204,11 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
-			const { expiresAt, startAt, createdAt, ...rest } = args[0] ?? {}
+			const { expiresAt, startAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
-			this.startAt = startAt ?? createdAt
+			this.startAt = startAt ?? this.createdAt
 			this.expiresAt = expiresAt
 		}
 
