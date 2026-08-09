@@ -13,7 +13,7 @@ export abstract class WeakEntity implements IWeakEntity {
 	}
 
 	get createdAt() {
-		return this._createdAt
+		return structuredClone(this._createdAt)
 	}
 
 	private set createdAt(value: Date) {
@@ -21,11 +21,11 @@ export abstract class WeakEntity implements IWeakEntity {
 			throw new Error('createdAt cannot be in the future')
 		}
 
-		this._createdAt = value
+		this._createdAt = structuredClone(value)
 	}
 
 	get updatedAt() {
-		return this._updatedAt
+		return structuredClone(this._updatedAt)
 	}
 
 	protected set updatedAt(value: Date) {
@@ -33,7 +33,7 @@ export abstract class WeakEntity implements IWeakEntity {
 			throw new Error('updatedAt cannot be before createdAt')
 		}
 
-		this._updatedAt = value
+		this._updatedAt = structuredClone(value)
 	}
 }
 
@@ -78,7 +78,7 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 		}
 
 		get confirmedAt() {
-			return this._confirmedAt
+			return structuredClone(this._confirmedAt)
 		}
 
 		private set confirmedAt(value: Date | undefined) {
@@ -91,7 +91,7 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 				this.updatedAt = new Date()
 			}
 
-			this._confirmedAt = value
+			this._confirmedAt = structuredClone(value)
 		}
 
 		confirm() {
@@ -133,7 +133,7 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 		}
 
 		get disabledAt() {
-			return this._disabledAt
+			return structuredClone(this._disabledAt)
 		}
 
 		private set disabledAt(value: Date | undefined) {
@@ -146,11 +146,11 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 				this.updatedAt = new Date()
 			}
 
-			this._disabledAt = value
+			this._disabledAt = structuredClone(value)
 		}
 
 		get deletedAt() {
-			return this._deletedAt
+			return structuredClone(this._deletedAt)
 		}
 
 		private set deletedAt(value: Date | undefined) {
@@ -163,7 +163,7 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 				this.updatedAt = new Date()
 			}
 
-			this._deletedAt = value
+			this._deletedAt = structuredClone(value)
 		}
 
 		softDelete() {
@@ -231,7 +231,7 @@ export function Expirable<TBase extends Constructor<WeakEntity>>(
 		}
 
 		get startAt() {
-			return this._startAt
+			return structuredClone(this._startAt)
 		}
 
 		set startAt(value: Date) {
@@ -246,11 +246,11 @@ export function Expirable<TBase extends Constructor<WeakEntity>>(
 				this.updatedAt = new Date()
 			}
 
-			this._startAt = value
+			this._startAt = structuredClone(value)
 		}
 
 		get expiresAt() {
-			return this._expiresAt
+			return structuredClone(this._expiresAt)
 		}
 
 		set expiresAt(value: Date | undefined) {
@@ -270,7 +270,7 @@ export function Expirable<TBase extends Constructor<WeakEntity>>(
 				this.updatedAt = new Date()
 			}
 
-			this._expiresAt = value
+			this._expiresAt = structuredClone(value)
 		}
 
 		isStarted() {
