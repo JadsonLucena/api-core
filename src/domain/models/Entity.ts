@@ -1,8 +1,8 @@
 import UUIDVO from '../value-objects/UUIDVO.ts'
 
 export abstract class WeakEntity implements IWeakEntity {
-	private _createdAt: Date
-	private _updatedAt: Date
+	private _createdAt!: Date
+	private _updatedAt!: Date
 
 	constructor({
 		createdAt = new Date(),
@@ -68,7 +68,6 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 		private _confirmedAt?: Date
 		private _isConfirmableHydrating = true
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
 			const { confirmedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
@@ -123,7 +122,6 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 		private _deletedAt?: Date
 		private _isArchivableHydrating = true
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
 			const { disabledAt, deletedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
@@ -178,7 +176,7 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 
 		restore() {
 			if (!this.isSoftDeleted()) {
-				throw new Error('It is not disabled')
+				throw new Error('It is not soft deleted')
 			}
 
 			this.deletedAt = undefined
@@ -219,10 +217,9 @@ export function Expirable<TBase extends Constructor<WeakEntity>>(
 ) {
 	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
-		private _startAt: Date
+		private _startAt!: Date
 		private _isExpirableHydrating = true
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
 			const { expiresAt, startAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
@@ -277,11 +274,11 @@ export function Expirable<TBase extends Constructor<WeakEntity>>(
 		}
 
 		isStarted() {
-			return Date.now() > this.startAt.getTime()
+			return Date.now() >= this.startAt.getTime()
 		}
 
 		isExpired() {
-			return Date.now() > (this.expiresAt?.getTime() ?? Infinity)
+			return Date.now() >= (this.expiresAt?.getTime() ?? Infinity)
 		}
 	}
 
@@ -320,7 +317,6 @@ export interface IExpirable {
 	isExpired(): boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Constructor<T = object> = abstract new (...args: any[]) => T
 
 type MixinHydrationPayload = Partial<IWeakEntity> & {
