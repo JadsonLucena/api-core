@@ -64,6 +64,7 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
 		private _confirmedAt?: Date
+		private _isHydrating: boolean = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
@@ -71,10 +72,8 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 
 			super(rest)
 
-			const updatedAt = this.updatedAt
-
 			this.confirmedAt = confirmedAt
-			this.updatedAt = updatedAt
+			this._isHydrating = false
 		}
 
 		get confirmedAt() {
@@ -84,7 +83,10 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 		private set confirmedAt(value: Date | undefined) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('confirmedAt cannot be before createdAt')
-			} else if (value?.getTime() !== this._confirmedAt?.getTime()) {
+			} else if (
+				!this._isHydrating &&
+				value?.getTime() !== this._confirmedAt?.getTime()
+			) {
 				this.updatedAt = new Date()
 			}
 
@@ -115,6 +117,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 	abstract class ArchivableMixin extends Base implements IArchivable {
 		private _disabledAt?: Date
 		private _deletedAt?: Date
+		private _isHydrating: boolean = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
@@ -122,11 +125,9 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 
 			super(rest)
 
-			const updatedAt = this.updatedAt
-
 			this.disabledAt = disabledAt
 			this.deletedAt = deletedAt
-			this.updatedAt = updatedAt
+			this._isHydrating = false
 		}
 
 		get disabledAt() {
@@ -136,7 +137,10 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 		private set disabledAt(value: Date | undefined) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('disabledAt cannot be before createdAt')
-			} else if (value?.getTime() !== this._disabledAt?.getTime()) {
+			} else if (
+				!this._isHydrating &&
+				value?.getTime() !== this._disabledAt?.getTime()
+			) {
 				this.updatedAt = new Date()
 			}
 
@@ -150,7 +154,10 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 		private set deletedAt(value: Date | undefined) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('deletedAt cannot be before createdAt')
-			} else if (value?.getTime() !== this._deletedAt?.getTime()) {
+			} else if (
+				!this._isHydrating &&
+				value?.getTime() !== this._deletedAt?.getTime()
+			) {
 				this.updatedAt = new Date()
 			}
 
@@ -204,9 +211,10 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 }
 
 export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
-	abstract class ExpirableMixin extends Base {
+	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
 		private _startAt: Date
+		private _isHydrating: boolean = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
@@ -214,11 +222,9 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 
 			super(rest)
 
-			const updatedAt = this.updatedAt
-
 			this.startAt = startAt ?? this.createdAt
 			this.expiresAt = expiresAt
-			this.updatedAt = updatedAt
+			this._isHydrating = false
 		}
 
 		get startAt() {
@@ -230,7 +236,10 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 				throw new Error('Start date cannot be before createdAt')
 			} else if (value.getTime() > (this.expiresAt?.getTime() ?? Infinity)) {
 				throw new Error('Start date cannot be after expiresAt')
-			} else if (value.getTime() !== this._startAt.getTime()) {
+			} else if (
+				!this._isHydrating &&
+				value.getTime() !== this._startAt.getTime()
+			) {
 				this.updatedAt = new Date()
 			}
 
@@ -242,13 +251,19 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 		}
 
 		set expiresAt(value: Date | undefined) {
-			if (value && value.getTime() < Date.now()) {
+			if (
+				!this._isHydrating &&
+				value && value.getTime() < Date.now()
+			) {
 				throw new Error('Expire date cannot be in the past')
 			} else if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('Expire date cannot be before createdAt')
 			} else if (value && value.getTime() < this.startAt.getTime()) {
 				throw new Error('Expire date cannot be before startAt')
-			} else if (value?.getTime() !== this._expiresAt?.getTime()) {
+			} else if (
+				!this._isHydrating &&
+				value?.getTime() !== this._expiresAt?.getTime()
+			) {
 				this.updatedAt = new Date()
 			}
 
