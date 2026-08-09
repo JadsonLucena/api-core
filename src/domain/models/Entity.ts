@@ -63,7 +63,7 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 
 export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArchivable>>>(
 	Base: TBase
-) {
+): TBase & Constructor<IConfirmable> {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
 		private _confirmedAt?: Date
 		private _isConfirmableHydrating = true
@@ -116,7 +116,7 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 
 export function Archivable<TBase extends Constructor<WeakEntity>>(
 	Base: TBase
-) {
+): TBase & Constructor<IArchivable> {
 	abstract class ArchivableMixin extends Base implements IArchivable {
 		private _disabledAt?: Date
 		private _deletedAt?: Date
@@ -214,7 +214,7 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 
 export function Expirable<TBase extends Constructor<WeakEntity>>(
 	Base: TBase
-) {
+): TBase & Constructor<IExpirable> {
 	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
 		private _startAt!: Date
