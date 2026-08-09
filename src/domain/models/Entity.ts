@@ -61,19 +61,21 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 	}
 }
 
-export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
+export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArchivable>>>(
+	Base: TBase
+) {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
 		private _confirmedAt?: Date
-		private _isHydrating: boolean = true
+		private _isConfirmableHydrating = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
-			const { confirmedAt, ...rest } = args[0] ?? {}
+			const { confirmedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
 			super(rest)
 
 			this.confirmedAt = confirmedAt
-			this._isHydrating = false
+			this._isConfirmableHydrating = false
 		}
 
 		get confirmedAt() {
@@ -84,7 +86,7 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('confirmedAt cannot be before createdAt')
 			} else if (
-				!this._isHydrating &&
+				!this._isConfirmableHydrating &&
 				value?.getTime() !== this._confirmedAt?.getTime()
 			) {
 				this.updatedAt = new Date()
@@ -96,9 +98,9 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 		confirm() {
 			if (this.isConfirmed()) {
 				throw new Error('It is already confirmed')
-			} else if ('isDisabled' in this && (this as unknown as IArchivable).isDisabled()) {
+			} else if (this.isDisabled?.()) {
 				throw new Error('It is disabled')
-			} else if ('isSoftDeleted' in this && (this as unknown as IArchivable).isSoftDeleted()) {
+			} else if (this.isSoftDeleted?.()) {
 				throw new Error('It is soft deleted')
 			}
 
@@ -113,21 +115,23 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 	return ConfirmableMixin
 }
 
-export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
+export function Archivable<TBase extends Constructor<WeakEntity>>(
+	Base: TBase
+) {
 	abstract class ArchivableMixin extends Base implements IArchivable {
 		private _disabledAt?: Date
 		private _deletedAt?: Date
-		private _isHydrating: boolean = true
+		private _isArchivableHydrating = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
-			const { disabledAt, deletedAt, ...rest } = args[0] ?? {}
+			const { disabledAt, deletedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
 			super(rest)
 
 			this.disabledAt = disabledAt
 			this.deletedAt = deletedAt
-			this._isHydrating = false
+			this._isArchivableHydrating = false
 		}
 
 		get disabledAt() {
@@ -138,7 +142,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('disabledAt cannot be before createdAt')
 			} else if (
-				!this._isHydrating &&
+				!this._isArchivableHydrating &&
 				value?.getTime() !== this._disabledAt?.getTime()
 			) {
 				this.updatedAt = new Date()
@@ -155,7 +159,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 			if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('deletedAt cannot be before createdAt')
 			} else if (
-				!this._isHydrating &&
+				!this._isArchivableHydrating &&
 				value?.getTime() !== this._deletedAt?.getTime()
 			) {
 				this.updatedAt = new Date()
@@ -183,7 +187,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 		isSoftDeleted() {
 			return !!this.deletedAt
 		}
-		
+
 		enable(): void {
 			if (!this.isDisabled()) {
 				throw new Error('It is not disabled')
@@ -210,21 +214,23 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 	return ArchivableMixin
 }
 
-export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
+export function Expirable<TBase extends Constructor<WeakEntity>>(
+	Base: TBase
+) {
 	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
 		private _startAt: Date
-		private _isHydrating: boolean = true
+		private _isExpirableHydrating = true
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
-			const { expiresAt, startAt, ...rest } = args[0] ?? {}
+			const { expiresAt, startAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
 
 			super(rest)
 
 			this.startAt = startAt ?? this.createdAt
 			this.expiresAt = expiresAt
-			this._isHydrating = false
+			this._isExpirableHydrating = false
 		}
 
 		get startAt() {
@@ -237,7 +243,7 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 			} else if (value.getTime() > (this.expiresAt?.getTime() ?? Infinity)) {
 				throw new Error('Start date cannot be after expiresAt')
 			} else if (
-				!this._isHydrating &&
+				!this._isExpirableHydrating &&
 				value.getTime() !== this._startAt.getTime()
 			) {
 				this.updatedAt = new Date()
@@ -252,7 +258,7 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 
 		set expiresAt(value: Date | undefined) {
 			if (
-				!this._isHydrating &&
+				!this._isExpirableHydrating &&
 				value && value.getTime() < Date.now()
 			) {
 				throw new Error('Expire date cannot be in the past')
@@ -261,7 +267,7 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 			} else if (value && value.getTime() < this.startAt.getTime()) {
 				throw new Error('Expire date cannot be before startAt')
 			} else if (
-				!this._isHydrating &&
+				!this._isExpirableHydrating &&
 				value?.getTime() !== this._expiresAt?.getTime()
 			) {
 				this.updatedAt = new Date()
@@ -315,4 +321,12 @@ export interface IExpirable {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Constructor<T> = abstract new (...args: any[]) => T
+type Constructor<T = object> = abstract new (...args: any[]) => T
+
+type MixinHydrationPayload = Partial<IWeakEntity> & {
+	id?: IOpaqueEntity['id'] | ISequentialEntity['id']
+} & Partial<
+	Pick<IConfirmable, 'confirmedAt'> &
+	Pick<IArchivable, 'disabledAt' | 'deletedAt'> &
+	Pick<IExpirable, 'startAt' | 'expiresAt'>
+>
