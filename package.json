@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Get an API with the features you need to develop any service",
   "engines": {
-    "node": ">=20"
+    "node": ">=26.1.0"
   },
   "type": "module",
   "main": "./src/index.ts",

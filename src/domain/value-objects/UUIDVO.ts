@@ -42,7 +42,7 @@ export default class UUIDVO extends String {
   static readonly URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8'
   static readonly X500 = '6ba7b814-9dad-11d1-80b4-00c04fd430c8'
 
-  constructor(uuid: inputUUID = crypto.randomUUID()) {
+  constructor(uuid: inputUUID = crypto.randomUUIDv7()) {
     if (!UUIDVO.verify(uuid)) {
       throw new TypeError('Invalid uuid')
     }
