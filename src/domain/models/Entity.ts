@@ -62,17 +62,20 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 }
 
 export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
-  abstract class ConfirmableMixin extends Base implements IConfirmable {
-    private _confirmedAt?: Date
+	abstract class ConfirmableMixin extends Base implements IConfirmable {
+		private _confirmedAt?: Date
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(...args: any[]) {
-      const { confirmedAt, ...rest } = args[0] ?? {}
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		constructor(...args: any[]) {
+			const { confirmedAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
+			const updatedAt = this.updatedAt
+
 			this.confirmedAt = confirmedAt
-    }
+			this.updatedAt = updatedAt
+		}
 
 		get confirmedAt() {
 			return this._confirmedAt
@@ -103,7 +106,7 @@ export function Confirmable<T extends Constructor<WeakEntity>>(Base: T) {
 		isConfirmed() {
 			return !!this.confirmedAt
 		}
-  }
+	}
 
 	return ConfirmableMixin
 }
@@ -115,12 +118,15 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
-      const { disabledAt, deletedAt, ...rest } = args[0] ?? {}
+			const { disabledAt, deletedAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
+			const updatedAt = this.updatedAt
+
 			this.disabledAt = disabledAt
 			this.deletedAt = deletedAt
+			this.updatedAt = updatedAt
 		}
 
 		get disabledAt() {
@@ -208,8 +214,11 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 
 			super(rest)
 
+			const updatedAt = this.updatedAt
+
 			this.startAt = startAt ?? this.createdAt
 			this.expiresAt = expiresAt
+			this.updatedAt = updatedAt
 		}
 
 		get startAt() {
@@ -221,7 +230,7 @@ export function Expirable<T extends Constructor<WeakEntity>>(Base: T) {
 				throw new Error('Start date cannot be before createdAt')
 			} else if (value.getTime() > (this.expiresAt?.getTime() ?? Infinity)) {
 				throw new Error('Start date cannot be after expiresAt')
-			}  else if (value.getTime() !== this._startAt.getTime()) {
+			} else if (value.getTime() !== this._startAt.getTime()) {
 				this.updatedAt = new Date()
 			}
 
