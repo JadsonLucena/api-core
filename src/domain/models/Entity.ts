@@ -158,7 +158,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 		}
 
 		softDelete() {
-			if (this.isDisabled()) {
+			if (this.isSoftDeleted()) {
 				throw new Error('It is already soft deleted')
 			}
 
@@ -166,7 +166,7 @@ export function Archivable<T extends Constructor<WeakEntity>>(Base: T) {
 		}
 
 		restore() {
-			if (!this.isDisabled()) {
+			if (!this.isSoftDeleted()) {
 				throw new Error('It is not disabled')
 			}
 
