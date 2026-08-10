@@ -61,15 +61,15 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 	}
 }
 
-export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArchivable & IExpirable>>>(
+export function Confirmable<TBase extends AbstractConstructor<WeakEntity & Partial<IArchivable & IExpirable>>>(
 	Base: TBase
-): TBase & Constructor<IConfirmable> {
+): TBase & AbstractConstructor<IConfirmable> {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
 		private _confirmedAt?: Date
 		private _isConfirmableHydrating = true
 
 		constructor(...args: any[]) {
-			const { confirmedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
+			const { confirmedAt, ...rest } = (args[0] ?? {}) as ConfirmablePayload<TBase>
 
 			super(rest)
 
@@ -116,16 +116,16 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 	return ConfirmableMixin
 }
 
-export function Archivable<TBase extends Constructor<WeakEntity>>(
+export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
 	Base: TBase
-): TBase & Constructor<IArchivable> {
+): TBase & AbstractConstructor<IArchivable> {
 	abstract class ArchivableMixin extends Base implements IArchivable {
 		private _disabledAt?: Date
 		private _deletedAt?: Date
 		private _isArchivableHydrating = true
 
 		constructor(...args: any[]) {
-			const { disabledAt, deletedAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
+			const { disabledAt, deletedAt, ...rest } = (args[0] ?? {}) as ArchivablePayload<TBase>
 
 			super(rest)
 
@@ -216,16 +216,16 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 	return ArchivableMixin
 }
 
-export function Expirable<TBase extends Constructor<WeakEntity>>(
+export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 	Base: TBase
-): TBase & Constructor<IExpirable> {
+): TBase & AbstractConstructor<IExpirable> {
 	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
 		private _startAt!: Date
 		private _isExpirableHydrating = true
 
 		constructor(...args: any[]) {
-			const { expiresAt, startAt, ...rest } = (args[0] ?? {}) as MixinHydrationPayload
+			const { expiresAt, startAt, ...rest } = (args[0] ?? {}) as ExpirablePayload<TBase>
 
 			super(rest)
 
@@ -321,12 +321,17 @@ export interface IExpirable {
 	isExpired(): boolean
 }
 
-type Constructor<T = object> = abstract new (...args: any[]) => T
+type AbstractConstructor<T = object> = abstract new (...args: any[]) => T
+type ConstructorParams<T> = T extends abstract new (...args: infer P) => any ? P : never
 
-type MixinHydrationPayload = Partial<IWeakEntity> & {
-	id?: IOpaqueEntity['id'] | ISequentialEntity['id']
-} & Partial<
-	Pick<IConfirmable, 'confirmedAt'> &
-	Pick<IArchivable, 'disabledAt' | 'deletedAt'> &
-	Pick<IExpirable, 'startAt' | 'expiresAt'>
->
+type ConfirmablePayload<TBase> = {
+	confirmedAt?: Date
+} & NonNullable<ConstructorParams<TBase>[0]>
+type ArchivablePayload<TBase> = {
+	disabledAt?: Date
+	deletedAt?: Date
+} & NonNullable<ConstructorParams<TBase>[0]>
+type ExpirablePayload<TBase> = {
+	startAt?: Date
+	expiresAt?: Date
+} & NonNullable<ConstructorParams<TBase>[0]>
