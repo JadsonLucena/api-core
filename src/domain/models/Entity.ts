@@ -50,10 +50,10 @@ export abstract class OpaqueEntity extends WeakEntity implements IOpaqueEntity {
 }
 
 export abstract class SequentialEntity extends WeakEntity implements ISequentialEntity {
-	readonly id: number | bigint
+	readonly id?: number | bigint
 
 	constructor({
-		id = Number.NaN,
+		id,
 		...rest
 	}: Partial<ISequentialEntity> = {}) {
 		super(rest)
@@ -199,10 +199,10 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 		}
 
 		disable() {
-			if (this.isDisabled()) {
-				throw new Error('It is already disabled')
-			} else if (this.isSoftDeleted()) {
+			if (this.isSoftDeleted()) {
 				throw new Error('It is soft deleted')
+			} else if (this.isDisabled()) {
+				throw new Error('It is already disabled')
 			}
 
 			this.disabledAt = new Date()
@@ -297,7 +297,7 @@ export interface IOpaqueEntity extends IWeakEntity {
 	readonly id: UUIDVO
 }
 export interface ISequentialEntity extends IWeakEntity {
-	readonly id: number | bigint
+	readonly id?: number | bigint
 }
 export interface IConfirmable {
 	get confirmedAt(): Date | undefined
