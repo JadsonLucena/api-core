@@ -1,3 +1,4 @@
+import { isValidDate } from '../service/TypeGuard.ts'
 import UUIDVO from '../value-objects/UUIDVO.ts'
 
 export abstract class WeakEntity implements IWeakEntity {
@@ -17,7 +18,9 @@ export abstract class WeakEntity implements IWeakEntity {
 	}
 
 	private set createdAt(value: Date) {
-		if (value.getTime() > Date.now()) {
+		if (!isValidDate(value)) {
+			throw new Error('createdAt is invalid')
+		} else if (value.getTime() > Date.now()) {
 			throw new Error('createdAt cannot be in the future')
 		}
 
@@ -29,7 +32,9 @@ export abstract class WeakEntity implements IWeakEntity {
 	}
 
 	protected set updatedAt(value: Date) {
-		if (value.getTime() < this.createdAt.getTime()) {
+		if (!isValidDate(value)) {
+			throw new Error('updatedAt is invalid')
+		} else if (value.getTime() < this.createdAt.getTime()) {
 			throw new Error('updatedAt cannot be before createdAt')
 		}
 
@@ -82,7 +87,9 @@ export function Confirmable<TBase extends AbstractConstructor<WeakEntity & Parti
 		}
 
 		private set confirmedAt(value: Date | undefined) {
-			if (value && value.getTime() < this.createdAt.getTime()) {
+			if (value && !isValidDate(value)) {
+				throw new Error('confirmedAt is invalid')
+			} else if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('confirmedAt cannot be before createdAt')
 			} else if (
 				!this._isConfirmableHydrating &&
@@ -139,7 +146,9 @@ export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
 		}
 
 		private set disabledAt(value: Date | undefined) {
-			if (value && value.getTime() < this.createdAt.getTime()) {
+			if (value && !isValidDate(value)) {
+				throw new Error('disabledAt is invalid')
+			} else if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('disabledAt cannot be before createdAt')
 			} else if (
 				!this._isArchivableHydrating &&
@@ -156,7 +165,9 @@ export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
 		}
 
 		private set deletedAt(value: Date | undefined) {
-			if (value && value.getTime() < this.createdAt.getTime()) {
+			if (value && !isValidDate(value)) {
+				throw new Error('deletedAt is invalid')
+			} else if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('deletedAt cannot be before createdAt')
 			} else if (
 				!this._isArchivableHydrating &&
@@ -239,7 +250,9 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 		}
 
 		set startAt(value: Date) {
-			if (value.getTime() < this.createdAt.getTime()) {
+			if (!isValidDate(value)) {
+				throw new Error('startAt is invalid')
+			} else if (value.getTime() < this.createdAt.getTime()) {
 				throw new Error('Start date cannot be before createdAt')
 			} else if (value.getTime() > (this.expiresAt?.getTime() ?? Infinity)) {
 				throw new Error('Start date cannot be after expiresAt')
@@ -258,7 +271,9 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 		}
 
 		set expiresAt(value: Date | undefined) {
-			if (
+			if (value && !isValidDate(value)) {
+				throw new Error('expiresAt is invalid')
+			} else if (
 				!this._isExpirableHydrating &&
 				value && value.getTime() < Date.now()
 			) {
