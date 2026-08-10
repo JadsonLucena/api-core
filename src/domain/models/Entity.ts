@@ -61,7 +61,7 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 	}
 }
 
-export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArchivable>>>(
+export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArchivable & IExpirable>>>(
 	Base: TBase
 ): TBase & Constructor<IConfirmable> {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
@@ -97,10 +97,12 @@ export function Confirmable<TBase extends Constructor<WeakEntity & Partial<IArch
 		confirm() {
 			if (this.isConfirmed()) {
 				throw new Error('It is already confirmed')
-			} else if (this.isDisabled?.()) {
-				throw new Error('It is disabled')
 			} else if (this.isSoftDeleted?.()) {
 				throw new Error('It is soft deleted')
+			} else if (this.isDisabled?.()) {
+				throw new Error('It is disabled')
+			} else if (this.isExpired?.()) {
+				throw new Error('It is expired')
 			}
 
 			this.confirmedAt = new Date()
@@ -186,15 +188,17 @@ export function Archivable<TBase extends Constructor<WeakEntity>>(
 			return !!this.deletedAt
 		}
 
-		enable(): void {
-			if (!this.isDisabled()) {
+		enable() {
+			if (this.isSoftDeleted()) {
+				throw new Error('It is soft deleted')
+			} else if (!this.isDisabled()) {
 				throw new Error('It is not disabled')
 			}
 
 			this.disabledAt = undefined
 		}
 
-		disable(): void {
+		disable() {
 			if (this.isDisabled()) {
 				throw new Error('It is already disabled')
 			} else if (this.isSoftDeleted()) {
