@@ -227,7 +227,7 @@ export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
 	return ArchivableMixin
 }
 
-export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
+export function Expirable<TBase extends AbstractConstructor<WeakEntity & Partial<IArchivable>>>(
 	Base: TBase
 ): TBase & AbstractConstructor<IExpirable> {
 	abstract class ExpirableMixin extends Base implements IExpirable {
@@ -253,6 +253,14 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 		}
 
 		schedule(startAt: Date, expiresAt?: Date) {
+			if (!this._isExpirableHydrating) {
+				if (this.isSoftDeleted?.()) {
+					throw new Error('It is soft deleted')
+				} else if (this.isDisabled?.()) {
+					throw new Error('It is disabled')
+				}
+			}
+
 			if (!isValidDate(startAt)) {
 				throw new Error('startAt is invalid')
 			} else if (startAt.getTime() < this.createdAt.getTime()) {
