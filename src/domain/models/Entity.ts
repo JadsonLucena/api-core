@@ -240,8 +240,7 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 
 			super(rest)
 
-			this.startAt = startAt ?? this.createdAt
-			this.expiresAt = expiresAt
+			this.schedule(startAt ?? this.createdAt, expiresAt)
 			this._isExpirableHydrating = false
 		}
 
@@ -249,47 +248,52 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 			return structuredClone(this._startAt)
 		}
 
-		set startAt(value: Date) {
-			if (!isValidDate(value)) {
-				throw new Error('startAt is invalid')
-			} else if (value.getTime() < this.createdAt.getTime()) {
-				throw new Error('Start date cannot be before createdAt')
-			} else if (value.getTime() > (this.expiresAt?.getTime() ?? Infinity)) {
-				throw new Error('Start date cannot be after expiresAt')
-			} else if (
-				!this._isExpirableHydrating &&
-				value.getTime() !== this._startAt.getTime()
-			) {
-				this.updatedAt = new Date()
-			}
-
-			this._startAt = structuredClone(value)
-		}
-
 		get expiresAt() {
 			return structuredClone(this._expiresAt)
 		}
 
-		set expiresAt(value: Date | undefined) {
-			if (value && !isValidDate(value)) {
-				throw new Error('expiresAt is invalid')
-			} else if (
+		schedule(startAt: Date, expiresAt?: Date) {
+			if (!isValidDate(startAt)) {
+				throw new Error('startAt is invalid')
+			} else if (startAt.getTime() < this.createdAt.getTime()) {
+				throw new Error('startAt cannot be before createdAt')
+			}
+
+			if (expiresAt !== undefined) {
+				if (!isValidDate(expiresAt)) {
+					throw new Error('expiresAt is invalid')
+				} else if (
+					!this._isExpirableHydrating &&
+					expiresAt.getTime() <= Date.now()
+				) {
+					throw new Error('expiresAt must be in the future')
+				} else if (expiresAt.getTime() < this.createdAt.getTime()) {
+					throw new Error('expiresAt cannot be before createdAt')
+				} else if (expiresAt.getTime() < startAt.getTime()) {
+					throw new Error('expiresAt cannot be before startAt')
+				}
+			}
+
+			if (
 				!this._isExpirableHydrating &&
-				value && value.getTime() <= Date.now()
-			) {
-				throw new Error('Expire date must be in the future')
-			} else if (value && value.getTime() < this.createdAt.getTime()) {
-				throw new Error('Expire date cannot be before createdAt')
-			} else if (value && value.getTime() < this.startAt.getTime()) {
-				throw new Error('Expire date cannot be before startAt')
-			} else if (
-				!this._isExpirableHydrating &&
-				value?.getTime() !== this._expiresAt?.getTime()
+				(
+					startAt.getTime() !== this._startAt?.getTime() ||
+					expiresAt?.getTime() !== this._expiresAt?.getTime()
+				)
 			) {
 				this.updatedAt = new Date()
 			}
 
-			this._expiresAt = structuredClone(value)
+			this._startAt = structuredClone(startAt)
+			this._expiresAt = structuredClone(expiresAt)
+		}
+
+		expireAt(expiresAt: Date) {
+			this.schedule(this._startAt, expiresAt)
+		}
+
+		neverExpire() {
+			this.schedule(this._startAt, undefined)
 		}
 
 		isStarted() {
@@ -330,8 +334,11 @@ export interface IArchivable {
 	isSoftDeleted(): boolean
 }
 export interface IExpirable {
-	startAt: Date
-	expiresAt?: Date
+	get startAt(): Date
+	get expiresAt(): Date | undefined
+	schedule(startAt: Date, expiresAt?: Date): void
+	expireAt(expiresAt: Date): void
+	neverExpire(): void
 	isStarted(): boolean
 	isExpired(): boolean
 }

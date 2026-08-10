@@ -24,10 +24,6 @@ export function isToken (value: any): value is string {
   return isString(value) && /^[\w.=-]+$/i.test(value)
 }
 
-export function isUndefined (value: any): value is undefined {
-  return typeof value === 'undefined'
-}
-
 export function isURL (value: any): value is URL {
   return value instanceof URL
 }
