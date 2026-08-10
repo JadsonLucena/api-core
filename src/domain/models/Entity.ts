@@ -275,9 +275,9 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity>>(
 				throw new Error('expiresAt is invalid')
 			} else if (
 				!this._isExpirableHydrating &&
-				value && value.getTime() < Date.now()
+				value && value.getTime() <= Date.now()
 			) {
-				throw new Error('Expire date cannot be in the past')
+				throw new Error('Expire date must be in the future')
 			} else if (value && value.getTime() < this.createdAt.getTime()) {
 				throw new Error('Expire date cannot be before createdAt')
 			} else if (value && value.getTime() < this.startAt.getTime()) {
