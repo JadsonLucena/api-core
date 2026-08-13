@@ -1,14 +1,21 @@
 import { isValidDate } from '../service/TypeGuard.ts'
 import UUIDVO from '../value-objects/UUIDVO.ts'
 
-export abstract class WeakEntity implements IWeakEntity {
+/**
+ * A Base Domain Entity base inspired by MER associative entities: the concept is the relationship
+ * itself, and its identity is the composite of the related participants - not a standalone surrogate key.
+ *
+ * Kept so those associations can own a shared lifecycle without inventing an
+ * artificial id only to fit the usual Entity shape.
+ */
+export abstract class AssociativeEntity implements IAssociativeEntity {
 	private _createdAt!: Date
 	private _updatedAt!: Date
 
 	constructor({
 		createdAt = new Date(),
 		updatedAt
-	}: Partial<IWeakEntity> = {}) {
+	}: Partial<IAssociativeEntity> = {}) {
 		this.createdAt = createdAt
 		this.updatedAt = updatedAt ?? this.createdAt
 	}
@@ -42,7 +49,7 @@ export abstract class WeakEntity implements IWeakEntity {
 	}
 }
 
-export abstract class OpaqueEntity extends WeakEntity implements IOpaqueEntity {
+export abstract class OpaqueEntity extends AssociativeEntity implements IOpaqueEntity {
 	readonly id: UUIDVO
 
 	constructor({
@@ -54,7 +61,7 @@ export abstract class OpaqueEntity extends WeakEntity implements IOpaqueEntity {
 	}
 }
 
-export abstract class SequentialEntity extends WeakEntity implements ISequentialEntity {
+export abstract class SequentialEntity extends AssociativeEntity implements ISequentialEntity {
 	readonly id?: number | bigint
 
 	constructor({
@@ -66,15 +73,18 @@ export abstract class SequentialEntity extends WeakEntity implements ISequential
 	}
 }
 
-export function Confirmable<TBase extends AbstractConstructor<WeakEntity & Partial<IArchivable & IExpirable>>>(
+export function Confirmable<TBase extends AbstractConstructor<AssociativeEntity & Partial<IArchivable & IExpirable>>>(
 	Base: TBase
-): TBase & AbstractConstructor<IConfirmable> {
+): MixinConstructor<TBase, IConfirmable, ConfirmablePayload<TBase>>
+export function Confirmable(
+	Base: AbstractConstructor<AssociativeEntity & Partial<IArchivable & IExpirable>>
+) {
 	abstract class ConfirmableMixin extends Base implements IConfirmable {
 		private _confirmedAt?: Date
 		private _isConfirmableHydrating = true
 
 		constructor(...args: any[]) {
-			const { confirmedAt, ...rest } = (args[0] ?? {}) as ConfirmablePayload<TBase>
+			const { confirmedAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
@@ -123,16 +133,17 @@ export function Confirmable<TBase extends AbstractConstructor<WeakEntity & Parti
 	return ConfirmableMixin
 }
 
-export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
+export function Archivable<TBase extends AbstractConstructor<AssociativeEntity>>(
 	Base: TBase
-): TBase & AbstractConstructor<IArchivable> {
+): MixinConstructor<TBase, IArchivable, ArchivablePayload<TBase>>
+export function Archivable(Base: AbstractConstructor<AssociativeEntity>) {
 	abstract class ArchivableMixin extends Base implements IArchivable {
 		private _disabledAt?: Date
 		private _deletedAt?: Date
 		private _isArchivableHydrating = true
 
 		constructor(...args: any[]) {
-			const { disabledAt, deletedAt, ...rest } = (args[0] ?? {}) as ArchivablePayload<TBase>
+			const { disabledAt, deletedAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
@@ -227,16 +238,17 @@ export function Archivable<TBase extends AbstractConstructor<WeakEntity>>(
 	return ArchivableMixin
 }
 
-export function Expirable<TBase extends AbstractConstructor<WeakEntity & Partial<IArchivable>>>(
+export function Expirable<TBase extends AbstractConstructor<AssociativeEntity & Partial<IArchivable>>>(
 	Base: TBase
-): TBase & AbstractConstructor<IExpirable> {
+): MixinConstructor<TBase, IExpirable, ExpirablePayload<TBase>>
+export function Expirable(Base: AbstractConstructor<AssociativeEntity & Partial<IArchivable>>) {
 	abstract class ExpirableMixin extends Base implements IExpirable {
 		private _expiresAt?: Date
 		private _startAt!: Date
 		private _isExpirableHydrating = true
 
 		constructor(...args: any[]) {
-			const { expiresAt, startAt, ...rest } = (args[0] ?? {}) as ExpirablePayload<TBase>
+			const { expiresAt, startAt, ...rest } = args[0] ?? {}
 
 			super(rest)
 
@@ -316,14 +328,14 @@ export function Expirable<TBase extends AbstractConstructor<WeakEntity & Partial
 	return ExpirableMixin
 }
 
-export interface IWeakEntity {
+export interface IAssociativeEntity {
 	get createdAt(): Date
 	get updatedAt(): Date
 }
-export interface IOpaqueEntity extends IWeakEntity {
+export interface IOpaqueEntity extends IAssociativeEntity {
 	readonly id: UUIDVO
 }
-export interface ISequentialEntity extends IWeakEntity {
+export interface ISequentialEntity extends IAssociativeEntity {
 	readonly id?: number | bigint
 }
 export interface IConfirmable {
@@ -353,15 +365,11 @@ export interface IExpirable {
 
 type AbstractConstructor<T = object> = abstract new (...args: any[]) => T
 type ConstructorParams<T> = T extends abstract new (...args: infer P) => any ? P : never
+type BasePayload<TBase> = NonNullable<ConstructorParams<TBase>[0]>
 
-type ConfirmablePayload<TBase> = {
-	confirmedAt?: Date
-} & NonNullable<ConstructorParams<TBase>[0]>
-type ArchivablePayload<TBase> = {
-	disabledAt?: Date
-	deletedAt?: Date
-} & NonNullable<ConstructorParams<TBase>[0]>
-type ExpirablePayload<TBase> = {
-	startAt?: Date
-	expiresAt?: Date
-} & NonNullable<ConstructorParams<TBase>[0]>
+type MixinConstructor<TBase extends AbstractConstructor, TMixin, TPayload extends object> =
+	abstract new (props?: TPayload) => InstanceType<TBase> & TMixin
+
+type ConfirmablePayload<TBase> = { confirmedAt?: Date } & BasePayload<TBase>
+type ArchivablePayload<TBase> = { disabledAt?: Date; deletedAt?: Date } & BasePayload<TBase>
+type ExpirablePayload<TBase> = { startAt?: Date; expiresAt?: Date } & BasePayload<TBase>
